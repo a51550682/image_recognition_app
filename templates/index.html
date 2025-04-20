@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <title>影像辨識應用</title>
+    <style>
+      .drop-zone {
+        border: 2px dashed #ccc;
+        padding: 20px;
+        text-align: center;
+        color: #aaa;
+      }
+      .drop-zone.dragover {
+        background-color: #eef;
+      }
+      #spinner {
+        display: none;
+      }
+      #upload-success {
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>上傳一張圖片進行識別</h1>
+
+    <form
+      id="uploadForm"
+      method="post"
+      action="/predict"
+      enctype="multipart/form-data"
+    >
+      <div class="drop-zone" id="dropZone">拖曳圖片到這裡，或點擊選擇</div>
+      <input type="file" name="file" id="fileInput" accept="image/*" hidden />
+      <p id="upload-success"></p>
+      <input type="submit" value="上傳並識別" />
+      <div id="spinner">上傳中...請稍候</div>
+    </form>
+
+    {% if filename %}
+    <h2>識別結果：</h2>
+    <img
+      src="{{ url_for('static', filename='uploads/' + filename) }}"
+      width="300"
+    />
+    <ul>
+      {% for pred in predictions %}
+      <li>{{ pred[1] }}：{{ '%.2f'|format(pred[2]*100) }}%</li>
+      {% endfor %}
+    </ul>
+
+    <form
+      action="{{ url_for('delete_image', filename=filename) }}"
+      method="post"
+    >
+      <button type="submit">刪除圖片</button>
+    </form>
+    {% elif error %}
+    <p style="color: red">{{ error }}</p>
+    {% endif %}
+
+    <script>
+      const dropZone = document.getElementById("dropZone");
+      const fileInput = document.getElementById("fileInput");
+      const form = document.getElementById("uploadForm");
+      const spinner = document.getElementById("spinner");
+      const successMsg = document.getElementById("upload-success");
+
+      dropZone.addEventListener("click", () => fileInput.click());
+
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+
+      dropZone.addEventListener("dragleave", () => {
+        dropZone.classList.remove("dragover");
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        const files = e.dataTransfer.files;
+        if (files.length) {
+          fileInput.files = files;
+          successMsg.innerText = "✅ 已成功選擇圖片：" + files[0].name;
+        }
+      });
+
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files.length > 0) {
+          successMsg.innerText =
+            "✅ 已成功選擇圖片：" + fileInput.files[0].name;
+        }
+      });
+
+      form.addEventListener("submit", () => {
+        spinner.style.display = "block";
+      });
+    </script>
+  </body>
+</html>
